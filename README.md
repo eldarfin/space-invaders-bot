@@ -7,3 +7,4 @@ The bot uses the OpenAI gym  to train and test the model. To install it:
 ```
 pip install gym
 ```
+For further documentation about the gym library, check [here](https://gym.openai.com/docs/)
