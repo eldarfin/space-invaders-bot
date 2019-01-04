@@ -36,6 +36,7 @@ class DQN():
         model = Sequential()
         model.add(Conv2D(input_shape=self.state_size, data_format="channels_last", filters=16, kernel_size=(8,8), strides=(4, 4), activation="relu"))
         model.add(Conv2D(filters=32, kernel_size=(4, 4), strides=(2, 2), activation='relu'))
+        model.add(Flatten())
         model.add(Dense(256, activation='relu'))
         model.add(Dense(self.action_size))
         model.compile(loss='mse', optimizer=Adam(lr=self.learning_rate))
@@ -86,6 +87,7 @@ if __name__ == "__main__":
         prev_lives = 3
         last_action = 0
         for t in range(5000):
+            print(last_action)
             if t % k == 0:
                 #env.render()
                 action = dqn.act(state)
@@ -108,13 +110,12 @@ if __name__ == "__main__":
                     dqn.replay(batch_size)
             else:
                 #env.render()
-                action = last_action
-                next_state, reward, done, info = env.step(action)
+                next_state, reward, done, info = env.step(last_action)
                 lives = info['ale.lives']
                 if reward > 0:
                     reward = 1
                 if lives < prev_lives:
-                    reward = -15
+                    reward = -1
                 next_state = preprocess(next_state)
                 score += reward
                 dqn.remember(np.array([state]), action, reward, np.array([next_state]), done)            
