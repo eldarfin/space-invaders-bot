@@ -16,7 +16,9 @@ def downsample(img):
 
 def preprocess(img):
     im = grayscale(downsample(img))
-    return im[16:102, :]
+    im = im[16:102, :]
+    im = im.reshape((86, 86, 1))
+    return im
 
 
 class DQN():
@@ -26,13 +28,13 @@ class DQN():
         self.memory = deque(maxlen=2000)
         self.gamma = 0.95 
         self.epsilon = 1.0
-        self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
+        self.epsilon_min = 0.1
+        self.epsilon_decay = 0.9995
         self.learning_rate = 0.001
         self.model = self.build_model()
     def build_model(self):
         model = Sequential()
-        model.add(Conv2D(input_shape=self.state_size, filters=16, kernel_size=(8,8), strides=(4, 4), activation="relu"))
+        model.add(Conv2D(input_shape=self.state_size, data_format="channels_last", filters=16, kernel_size=(8,8), strides=(4, 4), activation="relu"))
         model.add(Conv2D(filters=32, kernel_size=(4, 4), strides=(2, 2), activation='relu'))
         model.add(Flatten())
         model.add(Dense(256, activation='relu'))
@@ -46,7 +48,7 @@ class DQN():
     def act(self, state):
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
-        act_values = self.model.predict(state)
+        act_values = self.model.predict(np.array([state]))
         return np.argmax(act_values[0])
 
     def replay(self, batch_size):
@@ -69,30 +71,51 @@ class DQN():
         self.model.save_weights(name)
 
 if __name__ == "__main__":
-    episodes = 3
+    episodes = 5
     batch_size = 32
     env = gym.make('SpaceInvaders-v0')
-    state_size = (86, 86)
+    state = preprocess(env.reset())
+    state_size = state.shape
     action_size = env.action_space.n
     dqn = DQN(state_size, action_size)
+    lives = 3
+    prev_lives = 3
     for episode in range(episodes):
         state = env.reset()
         state = preprocess(state)
         score = 0
-        for t in range(1000):
+        for t in range(5000):
+            if t % 100 == 0:
+                print("t: ", t)
             #env.render()
-            action = dqn.act(np.array(state))
-            next_state, reward, done, info = env.step(env.action_space.sample())
+            action = dqn.act(state)
+            next_state, reward, done, info = env.step(action)
+            lives = info['ale.lives']
+            if lives < prev_lives:
+                reward = -15
             next_state = preprocess(next_state)
-            if reward > 0:
-                score += reward
-            dqn.remember(state, action, reward, next_state, done)            
+            score += reward
+            dqn.remember(np.array([state]), action, reward, np.array([next_state]), done)            
             state = next_state
             if done:
-                print("episode: {}/{}, score: {}, e: {:.2}".format(episode, episodes, score, dqn.epsilon))
+                print("episode: {}/{}, score: {}, e: {:.2}".format(episode+1, episodes, score, dqn.epsilon))
                 break
             if len(dqn.memory) > batch_size:
                 dqn.replay(batch_size)
+    
+    state = env.reset()
+    state = preprocess(state)
+    score = 0
+    for t in range(5000):
+        env.render()
+        action = dqn.act(state)
+        next_state, reward, done, info = env.step(action)
+        next_state = preprocess(next_state)
+        score += reward
+        state = next_state
+        if done:
+            break
+    
 
     '''img = preprocess(state)
     print(img.shape)
