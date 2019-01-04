@@ -5,7 +5,7 @@ env.reset()
 
 for t in range(5000):
     env.render()
-    next_state, reward, done, info = env.step(env.action_space.sample())
+    next_state, reward, done, info = env.step(6)
     print(reward, info['ale.lives'])
     if done:
         break
