@@ -9,15 +9,14 @@ from keras.models import Sequential
 from keras.optimizers import Adam 
 
 def grayscale(img):
-    return np.mean(img, axis=2).astype(np.uint8)
+    return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 def downsample(img):
-    return cv2.resize(img, (86, 110))
+    return cv2.resize(img, (80, 105))
 
 def preprocess(img):
     im = grayscale(downsample(img))
-    im = im[16:102, :]
-    im = im.reshape((86, 86, 1))
+    im = im.reshape((105, 80, 1))
     return im
 
 
