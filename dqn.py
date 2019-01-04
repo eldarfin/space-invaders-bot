@@ -87,7 +87,6 @@ if __name__ == "__main__":
         prev_lives = 3
         last_action = 0
         for t in range(5000):
-            print(last_action)
             if t % k == 0:
                 #env.render()
                 action = dqn.act(state)
