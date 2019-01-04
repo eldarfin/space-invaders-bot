@@ -70,20 +70,20 @@ class DQN():
         self.model.save_weights(name)
 
 if __name__ == "__main__":
-    episodes = 10
+    episodes = 100
     batch_size = 32
     env = gym.make('SpaceInvaders-v0')
     state = preprocess(env.reset())
     state_size = state.shape
     action_size = env.action_space.n
     dqn = DQN(state_size, action_size)
-    lives = 3
-    prev_lives = 3
     k = 3
     for episode in range(episodes):
         state = env.reset()
         state = preprocess(state)
         score = 0
+        lives = 3
+        prev_lives = 3
         last_action = 0
         for t in range(5000):
             if t % k == 0:
@@ -126,7 +126,9 @@ if __name__ == "__main__":
                 if len(dqn.memory) > batch_size:
                     dqn.replay(batch_size)
     
-    state = env.reset()
+    dqn.save('./models/space-invaders-dqn.h5')
+
+    '''state = env.reset()
     state = preprocess(state)
     score = 0
     for t in range(5000):
@@ -137,7 +139,7 @@ if __name__ == "__main__":
         score += reward
         state = next_state
         if done:
-            break
+            break'''
     
 
     '''img = preprocess(state)
