@@ -12,23 +12,27 @@ def grayscale(img):
     return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
 def downsample(img):
-    return cv2.resize(img, (80, 105))
+    return cv2.resize(img, (84, 105))
 
 def preprocess(img):
     im = grayscale(downsample(img))
-    im = im.reshape((105, 80, 1))
+    im = im[14:98, :]
+    im = im.reshape((84, 84, 1))
     return im
 
 
 class DQN():
-    def __init__(self, state_size, action_size):
+    def __init__(self, state_size, action_size, test=False):
         self.state_size = state_size
         self.action_size = action_size
         self.memory = deque(maxlen=2000)
         self.gamma = 0.95 
-        self.epsilon = 1.0
+        if test:
+            self.epsilon = 0.1
+        else:
+            self.epsilon = 1.0
         self.epsilon_min = 0.1
-        self.epsilon_decay = self.epsilon - self.epsilon_min / 1000000
+        self.epsilon_decay = 0.995
         self.learning_rate = 0.001
         self.model = self.build_model()
     def build_model(self):
@@ -61,7 +65,7 @@ class DQN():
             target_f[0][action] = target
             self.model.fit(state, target_f, epochs=1, verbose=0)
         if self.epsilon > self.epsilon_min:
-            self.epsilon -= self.epsilon_decay
+            self.epsilon *= self.epsilon_decay
 
     def load(self, name):
         self.model.load_weights(name)
@@ -72,60 +76,44 @@ class DQN():
 if __name__ == "__main__":
     episodes = 100
     batch_size = 32
-    env = gym.make('SpaceInvaders-v0')
+    env = gym.make('Breakout-v0')
     state = preprocess(env.reset())
     state_size = state.shape
     action_size = env.action_space.n
     dqn = DQN(state_size, action_size)
-    k = 3
+    scores = 0
     for episode in range(episodes):
         state = env.reset()
         state = preprocess(state)
         score = 0
-        lives = 3
-        prev_lives = 3
-        last_action = 0
-        for t in range(5000):
-            if t % k == 0:
-                #env.render()
-                action = dqn.act(state)
-                next_state, reward, done, info = env.step(action)
-                lives = info['ale.lives']
-                if reward > 0:
-                    reward = 1
-                if lives < prev_lives:
-                    reward = -1
-                next_state = preprocess(next_state)
-                score += reward
-                dqn.remember(np.array([state]), action, reward, np.array([next_state]), done)            
-                state = next_state
-                prev_lives = lives
-                last_action = action
-                if done:
-                    print("episode: {}/{}, score: {}, e: {:.2}".format(episode+1, episodes, score, dqn.epsilon))
-                    break
-                if len(dqn.memory) > batch_size:
-                    dqn.replay(batch_size)
-            else:
-                #env.render()
-                next_state, reward, done, info = env.step(last_action)
-                lives = info['ale.lives']
-                if reward > 0:
-                    reward = 1
-                if lives < prev_lives:
-                    reward = -1
-                next_state = preprocess(next_state)
-                score += reward
-                dqn.remember(np.array([state]), action, reward, np.array([next_state]), done)            
-                state = next_state
-                prev_lives = lives
-                if done:
-                    print("episode: {}/{}, score: {}, e: {:.2}".format(episode+1, episodes, score, dqn.epsilon))
-                    break
-                if len(dqn.memory) > batch_size:
-                    dqn.replay(batch_size)
+        lives = 5
+        prev_lives = 5
+        if episode % 5 == 0 and episode != 0:
+            print('Interim save, episode: ', episode)
+            dqn.save("./saves/breakout-dqn-{}.h5".format(episode))
+            print('Average score of last 5 games: ', scores / 5)
+            scores = 0
+        for t in range(100000):
+            #env.render()
+            action = dqn.act(state)
+            next_state, reward, done, info = env.step(action)
+            lives = info['ale.lives']
+            if lives < prev_lives:
+                reward = -10
+            next_state = preprocess(next_state)
+            score += reward
+            dqn.remember(np.array([state]), action, reward, np.array([next_state]), done)            
+            state = next_state
+            prev_lives = lives
+            last_action = action
+            if done:
+                print("episode: {}/{}, score: {}, e: {:.2}".format(episode+1, episodes, score, dqn.epsilon))
+                break
+            if len(dqn.memory) > batch_size:
+                dqn.replay(batch_size)
+        scores += score
     
-    dqn.save('./models/space-invaders-dqn.h5')
+    dqn.save('./saves/breakout-dqn.h5')
 
     '''state = env.reset()
     state = preprocess(state)
