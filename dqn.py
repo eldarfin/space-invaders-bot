@@ -32,7 +32,7 @@ class DQN():
         else:
             self.epsilon = 1.0
         self.epsilon_min = 0.1
-        self.epsilon_decay = 0.995
+        self.epsilon_decay = (self.epsilon - self.epsilon_min) / 1000
         self.learning_rate = 0.001
         self.model = self.build_model()
     def build_model(self):
@@ -52,6 +52,8 @@ class DQN():
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
         act_values = self.model.predict(np.array([state]))
+        if self.epsilon > self.epsilon_min:
+            self.epsilon -= self.epsilon_decay
         return np.argmax(act_values[0])
 
     def replay(self, batch_size):
@@ -64,8 +66,6 @@ class DQN():
             target_f = self.model.predict(state)
             target_f[0][action] = target
             self.model.fit(state, target_f, epochs=1, verbose=0)
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
 
     def load(self, name):
         self.model.load_weights(name)
@@ -74,7 +74,7 @@ class DQN():
         self.model.save_weights(name)
 
 if __name__ == "__main__":
-    episodes = 100
+    episodes = 500
     batch_size = 32
     env = gym.make('Breakout-v0')
     state = preprocess(env.reset())
@@ -82,6 +82,7 @@ if __name__ == "__main__":
     action_size = env.action_space.n
     dqn = DQN(state_size, action_size)
     scores = 0
+    avgs = []
     for episode in range(episodes):
         state = env.reset()
         state = preprocess(state)
@@ -92,6 +93,7 @@ if __name__ == "__main__":
             print('Interim save, episode: ', episode)
             dqn.save("./saves/breakout-dqn-{}.h5".format(episode))
             print('Average score of last 5 games: ', scores / 5)
+            avgs.append(scores/5)
             scores = 0
         for t in range(100000):
             #env.render()
@@ -114,6 +116,11 @@ if __name__ == "__main__":
         scores += score
     
     dqn.save('./saves/breakout-dqn.h5')
+    print(avgs)
+    rng = np.arange(5, len(avgs) * 5 + 1, 5)
+    
+    plt.plot(rng, avgs)
+    plt.show()
 
     '''state = env.reset()
     state = preprocess(state)
