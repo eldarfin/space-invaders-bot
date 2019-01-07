@@ -4,6 +4,11 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 from collections import deque
+
+import os
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
 from keras.layers import Dense, Conv2D, MaxPooling2D, Flatten
 from keras.models import Sequential
 from keras.optimizers import Adam 
@@ -79,7 +84,7 @@ if __name__ == "__main__":
     state_size = state.shape
     action_size = env.action_space.n
     dqn = DQN(state_size, action_size, test=True) 
-    dqn.load('./saves/breakout-dqn-70.h5')
+    dqn.load('./saves/breakout-dqn-50.h5')
     score = 0
     for t in range(10000):
         env.render()

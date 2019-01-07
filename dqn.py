@@ -32,8 +32,8 @@ class DQN():
         else:
             self.epsilon = 1.0
         self.epsilon_min = 0.1
-        self.epsilon_decay = (self.epsilon - self.epsilon_min) / 1000
-        self.learning_rate = 0.001
+        self.epsilon_decay = 0.99995    
+        self.learning_rate = 0.00025
         self.model = self.build_model()
     def build_model(self):
         model = Sequential()
@@ -52,8 +52,6 @@ class DQN():
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
         act_values = self.model.predict(np.array([state]))
-        if self.epsilon > self.epsilon_min:
-            self.epsilon -= self.epsilon_decay
         return np.argmax(act_values[0])
 
     def replay(self, batch_size):
@@ -64,8 +62,12 @@ class DQN():
                 target = (reward + self.gamma *
                           np.amax(self.model.predict(next_state)[0]))
             target_f = self.model.predict(state)
+            print("First: ", target_f)
             target_f[0][action] = target
+            print("Second: ", target_f)
             self.model.fit(state, target_f, epochs=1, verbose=0)
+        if self.epsilon > self.epsilon_min:
+            self.epsilon *= self.epsilon_decay
 
     def load(self, name):
         self.model.load_weights(name)
@@ -74,15 +76,16 @@ class DQN():
         self.model.save_weights(name)
 
 if __name__ == "__main__":
-    episodes = 500
+    episodes = 100
     batch_size = 32
-    env = gym.make('Breakout-v0')
+    env = gym.make('BreakoutDeterministic-v4')
     state = preprocess(env.reset())
     state_size = state.shape
     action_size = env.action_space.n
     dqn = DQN(state_size, action_size)
     scores = 0
     avgs = []
+    done = False
     for episode in range(episodes):
         state = env.reset()
         state = preprocess(state)
@@ -95,13 +98,13 @@ if __name__ == "__main__":
             print('Average score of last 5 games: ', scores / 5)
             avgs.append(scores/5)
             scores = 0
-        for t in range(100000):
+        for t in range(100000) or not done:
             #env.render()
             action = dqn.act(state)
             next_state, reward, done, info = env.step(action)
             lives = info['ale.lives']
             if lives < prev_lives:
-                reward = -10
+                reward = -200
             next_state = preprocess(next_state)
             score += reward
             dqn.remember(np.array([state]), action, reward, np.array([next_state]), done)            
