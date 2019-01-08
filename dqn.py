@@ -62,9 +62,7 @@ class DQN():
                 target = (reward + self.gamma *
                           np.amax(self.model.predict(next_state)[0]))
             target_f = self.model.predict(state)
-            print("First: ", target_f)
             target_f[0][action] = target
-            print("Second: ", target_f)
             self.model.fit(state, target_f, epochs=1, verbose=0)
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
@@ -76,13 +74,14 @@ class DQN():
         self.model.save_weights(name)
 
 if __name__ == "__main__":
-    episodes = 100
+    episodes = 300
     batch_size = 32
     env = gym.make('BreakoutDeterministic-v4')
     state = preprocess(env.reset())
     state_size = state.shape
     action_size = env.action_space.n
     dqn = DQN(state_size, action_size)
+    dqn.load('./saves/breakout-dqn.h5')
     scores = 0
     avgs = []
     done = False

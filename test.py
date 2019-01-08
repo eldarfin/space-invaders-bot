@@ -1,9 +1,11 @@
 import gym
+from gym import wrappers
 import random
 import numpy as np 
 import cv2
 import matplotlib.pyplot as plt
 from collections import deque
+import datetime
 
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  
@@ -80,11 +82,12 @@ class DQN():
 
 if __name__ == "__main__":
     env = gym.make('Breakout-v0')
+    env = wrappers.Monitor(env, './saves/video/{}/'.format(str(datetime.datetime.now().time())))
     state = preprocess(env.reset())
     state_size = state.shape
     action_size = env.action_space.n
     dqn = DQN(state_size, action_size, test=True) 
-    dqn.load('./saves/breakout-dqn-50.h5')
+    dqn.load('./saves/breakout-dqn-235.h5')
     score = 0
     for t in range(10000):
         env.render()
