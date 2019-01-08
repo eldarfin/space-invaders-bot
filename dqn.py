@@ -25,14 +25,14 @@ class DQN():
     def __init__(self, state_size, action_size, test=False):
         self.state_size = state_size
         self.action_size = action_size
-        self.memory = deque(maxlen=2000)
+        self.memory = deque(maxlen=1000000)
         self.gamma = 0.95 
         if test:
             self.epsilon = 0.1
         else:
             self.epsilon = 1.0
         self.epsilon_min = 0.1
-        self.epsilon_decay = 0.99995    
+        self.epsilon_decay = 0.99996    
         self.learning_rate = 0.00025
         self.model = self.build_model()
     def build_model(self):
@@ -74,7 +74,7 @@ class DQN():
         self.model.save_weights(name)
 
 if __name__ == "__main__":
-    episodes = 300
+    episodes = 400
     batch_size = 32
     env = gym.make('BreakoutDeterministic-v4')
     state = preprocess(env.reset())
@@ -85,6 +85,7 @@ if __name__ == "__main__":
     scores = 0
     avgs = []
     done = False
+    max_ = -1000
     for episode in range(episodes):
         state = env.reset()
         state = preprocess(state)
@@ -116,9 +117,12 @@ if __name__ == "__main__":
             if len(dqn.memory) > batch_size:
                 dqn.replay(batch_size)
         scores += score
+        if score > max_:
+            max_ = score
     
     dqn.save('./saves/breakout-dqn.h5')
     print(avgs)
+    print('Max: ', max_)
     rng = np.arange(5, len(avgs) * 5 + 1, 5)
     
     plt.plot(rng, avgs)

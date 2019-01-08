@@ -81,15 +81,16 @@ class DQN():
         self.model.save_weights(name)
 
 if __name__ == "__main__":
-    env = gym.make('Breakout-v0')
+    env = gym.make('BreakoutDeterministic-v4')
     env = wrappers.Monitor(env, './saves/video/{}/'.format(str(datetime.datetime.now().time())))
     state = preprocess(env.reset())
     state_size = state.shape
     action_size = env.action_space.n
     dqn = DQN(state_size, action_size, test=True) 
-    dqn.load('./saves/breakout-dqn-235.h5')
+    dqn.load('./saves/breakout-dqn-350.h5')
     score = 0
-    for t in range(10000):
+    done = False
+    for t in range(10000) or done:
         env.render()
         action = dqn.act(state)
         next_state, reward, done, info = env.step(action)
